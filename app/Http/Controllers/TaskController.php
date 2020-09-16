@@ -4,12 +4,14 @@ namespace App\Http\Controllers;
 
 use App\task;
 use App\User;
+use App\imagen;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Http\Response;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 
 
 class TaskController extends Controller{
@@ -55,12 +57,14 @@ class TaskController extends Controller{
 	 */
 	public function store(Request $request){
 
-		$task = new Task();
+		$task = new User();
+		$imagen = new imagen();
 
 		$validator = Validator::make($request->all(), [
 			'name' => 'required',
-			'description' => 'required',
-			'content' => 'required',
+			'email' => 'required',
+			'password' => 'required',
+			'imagen' => 'required'
 		]);
 
 		if ($validator->fails()) {
@@ -83,9 +87,13 @@ class TaskController extends Controller{
 		Storage::disk('local')->put($img_name, $img);
 
 		$task->name = $request->json('name');
-		$task->description = $request->json('description');
-		$task->content = $request->json('content');
-		$task->imagen = $img_name;
+		$task->email = $request->json('email');
+		$task->password = Hash::make($request->json('password'));
+
+
+		/* $imagen->imagen = $img_name;
+		$id_imagen = imagen::latest('id')->first(); */
+		$task->idImagen = $img_name;
 
 		$task->save();
 
@@ -145,7 +153,7 @@ class TaskController extends Controller{
 	 */
 	public function update(Request $request, task $task){
 
-		$task = Task::find($request->json('id'));
+		$task = User::find($request->json('id'));
 
 		$validator = Validator::make($request->all(), [
 			'id' => 'required',
@@ -180,9 +188,12 @@ class TaskController extends Controller{
 		}
 
 		$task->name = $request->json('name');
-		$task->description = $request->json('description');
-		$task->content = $request->json('content');
-		$task->imagen = $img_name;
+		$task->email = $request->json('email');
+		$task->password = Hash::make($request->json('password'));
+
+		/* $imagen->imagen = $img_name;
+		$id_imagen = imagen::latest('id')->first(); */
+		$task->idImagen = $img_name;
 
 		$task->save();
 
@@ -201,7 +212,17 @@ class TaskController extends Controller{
 	 */
 	public function destroy(Request $request, task $task){
 
-		$task = Task::findOrFail($request->id);
+		$task = User::find($request->id);
+
+		if ($task === null) {
+
+			return response()->json([
+				'success' => false,
+				'code' => 404,
+				'data' => []
+			], 404);
+
+		}
 
 		$imagen_edit = $task->imagen;
 
@@ -212,7 +233,7 @@ class TaskController extends Controller{
 			Storage::disk('local')->delete($img_name);
 		}
 
-		$task = Task::destroy($request->id);
+		$task = User::destroy($request->id);
 
 		return response()->json([
 			'success' => true,
