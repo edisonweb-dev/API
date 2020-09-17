@@ -22,7 +22,9 @@ class TaskController extends Controller{
 	 */
 	public function index(){
 
-		$task = User::all();
+		$task = DB::table('users')
+						->join('imagens', 'users.idImagen', '=', 'imagens.id')
+						->get();
 
 		if (count($task) > 0) {
 
@@ -91,9 +93,11 @@ class TaskController extends Controller{
 		$task->password = Hash::make($request->json('password'));
 
 
-		/* $imagen->imagen = $img_name;
-		$id_imagen = imagen::latest('id')->first(); */
-		$task->idImagen = $img_name;
+		$imagen->imagen = $img_name;
+		$imagen->save();
+
+		$id_imagen = imagen::latest('id')->first(); 
+		$task->idImagen = $id_imagen->id;
 
 		$task->save();
 
@@ -101,7 +105,7 @@ class TaskController extends Controller{
 			'success' => true,
 			'code' => 201,
 			'data' => $task
-		], 200);
+		], 200); 
 	}
 
 
@@ -114,9 +118,13 @@ class TaskController extends Controller{
 	 */
 	public function show(Request $request, User $user){
 
-		$user = User::where('email', $request->email)->first();
-
-		if ($user === null) {
+		$user = DB::table('users')
+					->select('*')
+					->join('imagens', 'users.idImagen', '=', 'imagens.id')
+					->where('users.email', '=', $request->email)
+					->get();
+		
+		if (count($user) < 1) {
 
 			return response()->json([
 				'success' => false,
@@ -153,7 +161,15 @@ class TaskController extends Controller{
 	 */
 	public function update(Request $request, task $task){
 
-		$task = User::find($request->json('id'));
+		$imagen = new imagen();
+
+		$task = DB::table('users')
+					->select('*')
+					->join('imagens', 'users.idImagen', '=', 'imagens.id')
+					->where('users.id', '=', $request->json('id'))
+					->first();
+
+		//$task = User::find($request->json('id'));
 
 		$validator = Validator::make($request->all(), [
 			'id' => 'required',
@@ -182,25 +198,31 @@ class TaskController extends Controller{
 
 		if (!empty($url) && !empty($imagen_edit)) {
 
-			$name = explode("/", $imagen_edit);
-			$img_edit = end($name);
-			Storage::disk('local')->delete($img_edit);
+			Storage::disk('local')->delete($task->imagen);
+			imagen::destroy($task->idImagen);
+
 		}
 
-		$task->name = $request->json('name');
-		$task->email = $request->json('email');
-		$task->password = Hash::make($request->json('password'));
 
-		/* $imagen->imagen = $img_name;
-		$id_imagen = imagen::latest('id')->first(); */
-		$task->idImagen = $img_name;
+		$imagen->imagen = $img_name;
+		$imagen->save();
 
-		$task->save();
+		$id_imagen = imagen::latest('id')->first(); 
+
+		DB::table('users')
+        ->where('id', $request->json('id'))
+        ->update([
+					'name' => $request->json('name'),
+					'email' => $request->json('email'),
+					'password' => Hash::make($request->json('password')),
+					'idImagen' => $id_imagen->id
+				]); 
+
 
 		return response()->json([
 			'success' => true,
 			'code' => 304,
-			'data' => $task
+			'data' => []
 		], 200);
 	}
 
@@ -212,7 +234,11 @@ class TaskController extends Controller{
 	 */
 	public function destroy(Request $request, task $task){
 
-		$task = User::find($request->id);
+		$task = DB::table('users')
+					->select('*')
+					->join('imagens', 'users.idImagen', '=', 'imagens.id')
+					->where('users.id', '=', $request->id)
+					->first();
 
 		if ($task === null) {
 
@@ -224,21 +250,20 @@ class TaskController extends Controller{
 
 		}
 
-		$imagen_edit = $task->imagen;
 
-		if (!empty($imagen_edit)) {
-
-			$name = explode("/", $imagen_edit);
-			$img_name = end($name);
-			Storage::disk('local')->delete($img_name);
+		if (!empty($task->imagen)) {
+			
+			Storage::disk('local')->delete($task->imagen);
 		}
 
-		$task = User::destroy($request->id);
+		User::destroy($request->id);
+		imagen::destroy($task->idImagen);
+		
 
 		return response()->json([
 			'success' => true,
 			'code' => 204,
-			'data' => [$task]
+			'data' => []
 		], 200);
 	}
 
