@@ -13,6 +13,11 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
+
+Route::group(['middleware' => 'prueba'], function () {
+    Route::get('/tareas/login', 'TaskController@login' );    
+});
+
 Route::get('/tareas', 'TaskController@index');
 
 Route::post('/tareas/guardar', 'TaskController@store');
@@ -23,7 +28,8 @@ Route::delete('/tareas/borrar/{id}', 'TaskController@destroy');
 
 Route::get('/tareas/buscar/{email}', 'TaskController@show');
 
-Route::get('tareas/login', 'TaskController@login' );
+
+
 
 Route::get('/', function () {
     return view('welcome');

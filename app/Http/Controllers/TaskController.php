@@ -12,6 +12,7 @@ use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 
 
 
@@ -256,7 +257,7 @@ class TaskController extends Controller
 	 */
 	public function destroy(Request $request, task $task)
 	{
-		
+
 		$task = DB::table('users')
 			->select('*')
 			->join('imagens', 'users.idImagen', '=', 'imagens.id')
@@ -323,10 +324,19 @@ class TaskController extends Controller
 			], 404);
 		} else if (Hash::check($request->json('password'), $user->password)) {
 
+			$token = Str::random(32);
+
+			DB::table('users')
+				->where('users.email', '=', $request->json('email'))
+				->update(['remember_token' => $token]);
+
 			return response()->json([
 				'success' => true,
 				'code' => 200,
-				'data' => 'usuario ingresado correctamente'
+				'data' =>  [
+					'message' => 'Ingreso usuario exitoso',
+					'token' => $token
+				]
 			], 200);
 		} else {
 
