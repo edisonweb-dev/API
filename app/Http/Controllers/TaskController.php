@@ -14,17 +14,20 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 
 
-class TaskController extends Controller{
+
+class TaskController extends Controller
+{
 	/**
 	 * Display a listing of the resource.
 	 *
 	 * @return \Illuminate\Http\Response
 	 */
-	public function index(){
+	public function index()
+	{
 
 		$task = DB::table('users')
-						->join('imagens', 'users.idImagen', '=', 'imagens.id')
-						->get();
+			->join('imagens', 'users.idImagen', '=', 'imagens.id')
+			->get();
 
 		if (count($task) > 0) {
 
@@ -33,7 +36,6 @@ class TaskController extends Controller{
 				'code' => 200,
 				'data' => $task
 			], 200);
-
 		} else {
 
 			return response()->json([
@@ -49,7 +51,9 @@ class TaskController extends Controller{
 	 *
 	 * @return \Illuminate\Http\Response
 	 */
-	public function create(){}
+	public function create()
+	{
+	}
 
 	/**
 	 * Store a newly created resource in storage.
@@ -57,15 +61,16 @@ class TaskController extends Controller{
 	 * @param  \Illuminate\Http\Request  $request
 	 * @return \Illuminate\Http\Response
 	 */
-	public function store(Request $request){
+	public function store(Request $request)
+	{
 
 		$task = new User();
 		$imagen = new imagen();
 
 		$validator = Validator::make($request->all(), [
-			'name' => 'required',
-			'email' => 'required',
-			'password' => 'required',
+			'name' => 'required|max:255',
+			'email' => 'required|email|max:255',
+			'password' => 'required|min:8|max:255',
 			'imagen' => 'required'
 		]);
 
@@ -96,7 +101,7 @@ class TaskController extends Controller{
 		$imagen->imagen = $img_name;
 		$imagen->save();
 
-		$id_imagen = imagen::latest('id')->first(); 
+		$id_imagen = imagen::latest('id')->first();
 		$task->idImagen = $id_imagen->id;
 
 		$task->save();
@@ -105,7 +110,7 @@ class TaskController extends Controller{
 			'success' => true,
 			'code' => 201,
 			'data' => $task
-		], 200); 
+		], 200);
 	}
 
 
@@ -116,14 +121,16 @@ class TaskController extends Controller{
 	 * @param  \App\task  $task
 	 * @return \Illuminate\Http\Response
 	 */
-	public function show(Request $request, User $user){
+	public function show(Request $request, User $user)
+	{
+
 
 		$user = DB::table('users')
-					->select('*')
-					->join('imagens', 'users.idImagen', '=', 'imagens.id')
-					->where('users.email', '=', $request->email)
-					->get();
-		
+			->select('*')
+			->join('imagens', 'users.idImagen', '=', 'imagens.id')
+			->where('users.email', '=', $request->email)
+			->get();
+
 		if (count($user) < 1) {
 
 			return response()->json([
@@ -131,7 +138,6 @@ class TaskController extends Controller{
 				'code' => 404,
 				'data' => []
 			], 404);
-
 		} else {
 
 			return response()->json([
@@ -148,7 +154,8 @@ class TaskController extends Controller{
 	 * @param  \App\task  $task
 	 * @return \Illuminate\Http\Response
 	 */
-	public function edit(task $task){
+	public function edit(task $task)
+	{
 		//
 	}
 
@@ -159,15 +166,30 @@ class TaskController extends Controller{
 	 * @param  \App\task  $task
 	 * @return \Illuminate\Http\Response
 	 */
-	public function update(Request $request, task $task){
+	public function update(Request $request, task $task)
+	{
+
+		$validator = Validator::make($request->all(), [
+			'id' => 'required',
+			'email' => 'required|email|max:255',
+		]);
+
+		if ($validator->fails()) {
+			return response()->json([
+				'success' => false,
+				'code' => 404,
+				'data' => []
+			], 404);
+		}
+
 
 		$imagen = new imagen();
 
 		$task = DB::table('users')
-					->select('*')
-					->join('imagens', 'users.idImagen', '=', 'imagens.id')
-					->where('users.id', '=', $request->json('id'))
-					->first();
+			->select('*')
+			->join('imagens', 'users.idImagen', '=', 'imagens.id')
+			->where('users.id', '=', $request->json('id'))
+			->first();
 
 		//$task = User::find($request->json('id'));
 
@@ -200,29 +222,29 @@ class TaskController extends Controller{
 
 			Storage::disk('local')->delete($task->imagen);
 			imagen::destroy($task->idImagen);
-
 		}
 
 
 		$imagen->imagen = $img_name;
 		$imagen->save();
 
-		$id_imagen = imagen::latest('id')->first(); 
+		$id_imagen = imagen::latest('id')->first();
 
 		DB::table('users')
-        ->where('id', $request->json('id'))
-        ->update([
-					'name' => $request->json('name'),
-					'email' => $request->json('email'),
-					'password' => Hash::make($request->json('password')),
-					'idImagen' => $id_imagen->id
-				]); 
+			->where('id', $request->json('id'))
+			->update([
+				'name' => $request->json('name'),
+				'email' => $request->json('email'),
+				'password' => Hash::make($request->json('password')),
+				'idImagen' => $id_imagen->id
+			]);
 
+		$userEditado = User::where('id', $request->json('id'))->first();
 
 		return response()->json([
 			'success' => true,
 			'code' => 304,
-			'data' => []
+			'data' => $userEditado
 		], 200);
 	}
 
@@ -232,13 +254,14 @@ class TaskController extends Controller{
 	 * @param  \App\task  $task
 	 * @return \Illuminate\Http\Response
 	 */
-	public function destroy(Request $request, task $task){
-
+	public function destroy(Request $request, task $task)
+	{
+		
 		$task = DB::table('users')
-					->select('*')
-					->join('imagens', 'users.idImagen', '=', 'imagens.id')
-					->where('users.id', '=', $request->id)
-					->first();
+			->select('*')
+			->join('imagens', 'users.idImagen', '=', 'imagens.id')
+			->where('users.id', '=', $request->id)
+			->first();
 
 		if ($task === null) {
 
@@ -247,18 +270,17 @@ class TaskController extends Controller{
 				'code' => 404,
 				'data' => []
 			], 404);
-
 		}
 
 
 		if (!empty($task->imagen)) {
-			
+
 			Storage::disk('local')->delete($task->imagen);
 		}
 
 		User::destroy($request->id);
 		imagen::destroy($task->idImagen);
-		
+
 
 		return response()->json([
 			'success' => true,
@@ -267,8 +289,58 @@ class TaskController extends Controller{
 		], 200);
 	}
 
+	public function login(Request $request)
+	{
 
-	public function getB64Image($base64_image){
+		$validator = Validator::make($request->all(), [
+			'email' => 'required|email|max:255',
+			'password' => 'required',
+		]);
+
+		if ($validator->fails()) {
+			return response()->json([
+				'success' => false,
+				'code' => 404,
+				'data' => []
+			], 404);
+		}
+
+
+		$user = DB::table('users')
+			->select('*')
+			->join('imagens', 'users.idImagen', '=', 'imagens.id')
+			->where('users.email', '=', $request->json('email'))
+			->first();
+
+
+
+		if ($user === null) {
+
+			return response()->json([
+				'success' => false,
+				'code' => 404,
+				'data' => 'usuario no existe'
+			], 404);
+		} else if (Hash::check($request->json('password'), $user->password)) {
+
+			return response()->json([
+				'success' => true,
+				'code' => 200,
+				'data' => 'usuario ingresado correctamente'
+			], 200);
+		} else {
+
+			return response()->json([
+				'success' => false,
+				'code' => 404,
+				'data' => 'contraseña incorrecta'
+			], 404);
+		}
+	}
+
+
+	public function getB64Image($base64_image)
+	{
 
 		$image_service_str = substr($base64_image, strpos($base64_image, ",") + 1);
 
@@ -277,7 +349,8 @@ class TaskController extends Controller{
 		return $image;
 	}
 
-	public function getB64Extension($base64_image, $full = null){
+	public function getB64Extension($base64_image, $full = null)
+	{
 		// Obtener mediante una expresión regular la extensión imagen y guardarla
 		// en la variable "img_extension"        
 		preg_match("/^data:image\/(.*);base64/i", $base64_image, $img_extension);
@@ -286,12 +359,12 @@ class TaskController extends Controller{
 		return ($full) ?  $img_extension[0] : $img_extension[1];
 	}
 
-	public function getImageB64($filename){
+	public function getImageB64($filename)
+	{
 		//Obtener la imagen del disco creado anteriormente de acuerdo al nombre de
 		// la imagen solicitada
 		$file = Storage::disk('images_base64')->get($filename);
 		// Retornar una respuesta de tipo 200 con el archivo de la Imagen
 		return new Response($file, 200);
 	}
-
 }

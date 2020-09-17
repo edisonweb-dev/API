@@ -23,7 +23,7 @@ Route::delete('/tareas/borrar/{id}', 'TaskController@destroy');
 
 Route::get('/tareas/buscar/{email}', 'TaskController@show');
 
-Route::get('tareas/crear', 'RegisterController@create' );
+Route::get('tareas/login', 'TaskController@login' );
 
 Route::get('/', function () {
     return view('welcome');
