@@ -13,8 +13,10 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
-
-
+use Namshi\JOSE\JWT;
+use Tymon\JWTAuth\Exceptions\TokenBlacklistedException;
+use Tymon\JWTAuth\Exceptions\TokenExpiredException;
+use Tymon\JWTAuth\Facades\JWTAuth;
 
 class TaskController extends Controller
 {
@@ -47,6 +49,7 @@ class TaskController extends Controller
 		}
 	}
 
+	
 	/**
 	 * Show the form for creating a new resource.
 	 *
@@ -54,6 +57,7 @@ class TaskController extends Controller
 	 */
 	public function create()
 	{
+		
 	}
 
 	/**
@@ -124,8 +128,6 @@ class TaskController extends Controller
 	 */
 	public function show(Request $request, User $user)
 	{
-
-
 		$user = DB::table('users')
 			->select('*')
 			->join('imagens', 'users.idImagen', '=', 'imagens.id')
@@ -192,7 +194,6 @@ class TaskController extends Controller
 			->where('users.id', '=', $request->json('id'))
 			->first();
 
-		//$task = User::find($request->json('id'));
 
 		$validator = Validator::make($request->all(), [
 			'id' => 'required',
@@ -293,9 +294,11 @@ class TaskController extends Controller
 	public function login(Request $request)
 	{
 
+		$credentials = $request->only("email","password");
+
 		$validator = Validator::make($request->all(), [
 			'email' => 'required|email|max:255',
-			'password' => 'required',
+			'password' => 'required|max:255',
 		]);
 
 		if ($validator->fails()) {
@@ -306,14 +309,13 @@ class TaskController extends Controller
 			], 404);
 		}
 
-
+		
 		$user = DB::table('users')
 			->select('*')
 			->join('imagens', 'users.idImagen', '=', 'imagens.id')
 			->where('users.email', '=', $request->json('email'))
 			->first();
-
-
+		
 
 		if ($user === null) {
 
@@ -324,20 +326,17 @@ class TaskController extends Controller
 			], 404);
 		} else if (Hash::check($request->json('password'), $user->password)) {
 
-			$token = Str::random(32);
-
-			DB::table('users')
-				->where('users.email', '=', $request->json('email'))
-				->update(['remember_token' => $token]);
+			$token = JWTAuth::attempt($credentials);
 
 			return response()->json([
 				'success' => true,
 				'code' => 200,
 				'data' =>  [
-					'message' => 'Ingreso usuario exitoso',
+					'message' => 'Ingreso usuario con exito',
 					'token' => $token
 				]
 			], 200);
+
 		} else {
 
 			return response()->json([
@@ -347,6 +346,7 @@ class TaskController extends Controller
 			], 404);
 		}
 	}
+
 
 
 	public function getB64Image($base64_image)

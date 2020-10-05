@@ -19,6 +19,17 @@ class VerifyCsrfToken extends Middleware
         //
         '/tareas/guardar',
         '/tareas/actualizar',
-        '/tareas/borrar/*'
+        '/tareas/borrar/*',
+        '/tareas/validar',
+        '/token/login',
+        '/token/me',
+        '/token/refresh',
+        '/tokens/register/',
+        '/tokens/login/',
+        '/tokens/open/',
+        '/tokens/user/',
+        '/tokens/closed/',
+        
+        
     ];
 }
